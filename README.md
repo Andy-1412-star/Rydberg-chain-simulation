@@ -277,8 +277,8 @@ python main.py
 
 If `python main.py` does not work because Windows points to the wrong Python interpreter, use your Anaconda Python path instead, for example:
 
-```bash
-C:\Users\AndyW\anaconda3\python.exe main.py
+```powershell
+& "C:\Users\AndyW\anaconda3\python.exe" main.py
 ```
 
 The script will save figures into a folder called:
