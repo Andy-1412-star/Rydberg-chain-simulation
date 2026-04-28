@@ -16,7 +16,12 @@ from observables import (
     compute_correlation_matrix,
     compute_site_resolved_excitation,
 )
-from rydberg_model import build_hamiltonian, check_hermitian, initial_ground_state
+from rydberg_model import (
+    build_hamiltonian,
+    check_hermitian,
+    initial_ground_state,
+    initial_product_state,
+)
 
 
 def evolve_state_exact_diagonalization(
@@ -61,6 +66,7 @@ def run_single_simulation(
     V: float,
     interaction_type: str,
     times: np.ndarray,
+    initial_bitstring: str | None = None,
 ) -> dict:
     """
     Run one complete Rydberg-chain simulation and return a structured result.
@@ -70,18 +76,49 @@ def run_single_simulation(
     This function packages together the standard workflow:
 
     1. build the Hamiltonian
-    2. start from |ggg...g>
+    2. start from |ggg...g> or another chosen product state
     3. evolve in time
     4. compute key observables
 
     It is designed so that parameter scans can reuse the same workflow without
     duplicating code.
+
+    Parameters
+    ----------
+    N : int
+        Number of atoms in the chain.
+    Omega : float
+        Rabi frequency.
+    Delta : float
+        Detuning.
+    V : float
+        Interaction strength scale.
+    interaction_type : str
+        Interaction model, either ``"power_law"`` or ``"nearest_neighbor"``.
+    times : numpy.ndarray
+        One-dimensional array of time points.
+    initial_bitstring : str or None, optional
+        Binary string specifying the initial product state. If ``None``, the
+        simulation starts from the all-ground state ``|ggg...g>``. If a string
+        is provided, its length must equal ``N``.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the parameters, Hamiltonian, chosen initial
+        state, time-evolved states, and several observables.
     """
     H = build_hamiltonian(N, Omega, Delta, V, interaction_type=interaction_type)
     if not check_hermitian(H):
         raise ValueError("Constructed Hamiltonian is not Hermitian.")
 
-    psi0 = initial_ground_state(N)
+    if initial_bitstring is None:
+        psi0 = initial_ground_state(N)
+    else:
+        if len(initial_bitstring) != N:
+            raise ValueError("initial_bitstring must have length N.")
+        psi0 = initial_product_state(initial_bitstring)
+
     states = evolve_state_exact_diagonalization(H, psi0, times)
 
     # Normalization should be preserved by unitary time evolution. Checking it
@@ -103,10 +140,12 @@ def run_single_simulation(
             "Delta": Delta,
             "V": V,
             "interaction_type": interaction_type,
+            "initial_bitstring": initial_bitstring,
         },
         "times": times,
         "hamiltonian": H,
         "initial_state": psi0,
+        "initial_bitstring": initial_bitstring,
         "states": states,
         "average_excitation": average_excitation,
         "excitation_density": average_excitation / N,
@@ -123,6 +162,7 @@ def scan_interaction_strength(
     V_values: list[float],
     interaction_type: str,
     times: np.ndarray,
+    initial_bitstring: str | None = None,
 ) -> dict:
     """
     Compare dynamics while scanning the interaction strength V.
@@ -133,6 +173,29 @@ def scan_interaction_strength(
     dynamics. When V / Omega becomes large, simultaneous nearby excitations are
     energetically suppressed, which is the basic idea behind the Rydberg
     blockade regime.
+
+    Parameters
+    ----------
+    N : int
+        Number of atoms.
+    Omega : float
+        Rabi frequency held fixed during the scan.
+    Delta : float
+        Detuning held fixed during the scan.
+    V_values : list[float]
+        Interaction strengths to compare.
+    interaction_type : str
+        Interaction model used during the scan.
+    times : numpy.ndarray
+        Time grid used for every simulation.
+    initial_bitstring : str or None, optional
+        Initial product state used for every run in the scan. If ``None``, the
+        scan starts from the all-ground state.
+
+    Returns
+    -------
+    dict
+        A dictionary mapping readable labels to complete simulation results.
     """
     results = {}
     for V in V_values:
@@ -144,6 +207,7 @@ def scan_interaction_strength(
             V=V,
             interaction_type=interaction_type,
             times=times,
+            initial_bitstring=initial_bitstring,
         )
     return results
 
@@ -155,6 +219,7 @@ def scan_detuning(
     V: float,
     interaction_type: str,
     times: np.ndarray,
+    initial_bitstring: str | None = None,
 ) -> dict:
     """
     Compare dynamics while scanning the detuning Delta.
@@ -164,6 +229,29 @@ def scan_detuning(
     Changing Delta changes the energetic preference for making Rydberg
     excitations. Negative, zero, and positive detuning can therefore produce
     noticeably different oscillation amplitudes and correlation patterns.
+
+    Parameters
+    ----------
+    N : int
+        Number of atoms.
+    Omega : float
+        Rabi frequency held fixed.
+    Delta_values : list[float]
+        Detuning values to compare.
+    V : float
+        Interaction strength held fixed.
+    interaction_type : str
+        Interaction model used during the scan.
+    times : numpy.ndarray
+        Time grid used for every simulation.
+    initial_bitstring : str or None, optional
+        Initial product state used for every run in the scan. If ``None``, the
+        scan starts from the all-ground state.
+
+    Returns
+    -------
+    dict
+        A dictionary mapping readable labels to complete simulation results.
     """
     results = {}
     for Delta in Delta_values:
@@ -175,6 +263,7 @@ def scan_detuning(
             V=V,
             interaction_type=interaction_type,
             times=times,
+            initial_bitstring=initial_bitstring,
         )
     return results
 
@@ -186,6 +275,7 @@ def scan_driving_strength(
     V: float,
     interaction_type: str,
     times: np.ndarray,
+    initial_bitstring: str | None = None,
 ) -> dict:
     """
     Compare dynamics while scanning the driving strength Omega.
@@ -196,6 +286,29 @@ def scan_driving_strength(
     oscillatory dynamics. The competition between Omega and V is particularly
     important, because the ratio V / Omega is a simple guide to whether the
     system is in a weakly interacting or blockade-dominated regime.
+
+    Parameters
+    ----------
+    N : int
+        Number of atoms.
+    Omega_values : list[float]
+        Rabi frequencies to compare.
+    Delta : float
+        Detuning held fixed.
+    V : float
+        Interaction strength held fixed.
+    interaction_type : str
+        Interaction model used during the scan.
+    times : numpy.ndarray
+        Time grid used for every simulation.
+    initial_bitstring : str or None, optional
+        Initial product state used for every run in the scan. If ``None``, the
+        scan starts from the all-ground state.
+
+    Returns
+    -------
+    dict
+        A dictionary mapping readable labels to complete simulation results.
     """
     results = {}
     for Omega in Omega_values:
@@ -207,5 +320,6 @@ def scan_driving_strength(
             V=V,
             interaction_type=interaction_type,
             times=times,
+            initial_bitstring=initial_bitstring,
         )
     return results

@@ -34,6 +34,13 @@ def main() -> None:
     Delta = 0.0
     V = 10.0
     interaction_type = "power_law"
+    # Choose the initial product state using the convention:
+    # "0" = |g> and "1" = |r>.
+    # For example:
+    # "000000" means all atoms start in |g>
+    # "100000" means the first atom starts in |r>
+    # "101010" means an alternating Rydberg excitation pattern
+    initial_bitstring = "000000"
 
     # We work in units with hbar = 1, so time is measured in inverse energy
     # (or inverse frequency) units.
@@ -43,6 +50,7 @@ def main() -> None:
     figures_dir.mkdir(exist_ok=True)
 
     maybe_print_hamiltonian_summary(N, Omega, Delta, V, interaction_type)
+    print(f"  Initial product state        : {initial_bitstring}")
     H = build_hamiltonian(N, Omega, Delta, V, interaction_type=interaction_type)
     if not check_hermitian(H):
         raise ValueError("Hamiltonian failed the Hermiticity check.")
@@ -56,6 +64,7 @@ def main() -> None:
         V=V,
         interaction_type=interaction_type,
         times=times,
+        initial_bitstring=initial_bitstring,
     )
 
     avg_excitation = result["average_excitation"]
@@ -119,6 +128,7 @@ def main() -> None:
         V_values=V_values,
         interaction_type=interaction_type,
         times=times,
+        initial_bitstring=initial_bitstring,
     )
 
     compare_average_excitation(

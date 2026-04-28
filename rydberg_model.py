@@ -347,6 +347,72 @@ def initial_ground_state(N: int) -> np.ndarray:
     return state
 
 
+def initial_product_state(bitstring: str) -> np.ndarray:
+    """
+    Return a computational-basis product state specified by a binary string.
+
+    Physical meaning
+    ----------------
+    This function prepares a simple product state in which each atom is placed
+    either in the ground state |g> or in the Rydberg excited state |r>.
+
+    The basis convention is
+
+    - ``"0"`` means ``|g>``
+    - ``"1"`` means ``|r>``
+
+    so a bitstring such as
+
+    - ``"000000"`` means ``|gggggg>``
+    - ``"100000"`` means ``|rggggg>``
+    - ``"101010"`` means ``|rgrgrg>``
+
+    The leftmost character corresponds to site 0 and the rightmost character
+    corresponds to site N - 1. Because this is a computational-basis product
+    state, the final many-body state vector has a single non-zero entry.
+
+    Parameters
+    ----------
+    bitstring : str
+        Binary string specifying the product state of the chain.
+
+    Returns
+    -------
+    numpy.ndarray
+        A normalized complex-valued state vector of length 2^N, where N is the
+        length of the bitstring.
+
+    Raises
+    ------
+    ValueError
+        If the bitstring is empty or contains characters other than ``"0"``
+        and ``"1"``.
+
+    Notes
+    -----
+    The binary string maps directly to the computational basis index. For
+    example, the bitstring ``"101"`` is the binary representation of the
+    integer 5, so the returned state vector has amplitude 1 at index 5 and 0
+    everywhere else.
+    """
+    if not bitstring:
+        raise ValueError("bitstring must not be empty.")
+    if any(bit not in {"0", "1"} for bit in bitstring):
+        raise ValueError("bitstring must contain only '0' and '1'.")
+
+    N = len(bitstring)
+    dimension = 2**N
+    state = np.zeros(dimension, dtype=complex)
+
+    # The many-body computational basis is ordered by binary integers.
+    # Reading the whole bitstring as a binary number therefore tells us which
+    # basis vector represents the chosen product state.
+    basis_index = int(bitstring, 2)
+    state[basis_index] = 1.0 + 0.0j
+
+    return state
+
+
 def check_hermitian(H: np.ndarray, atol: float = 1e-10) -> bool:
     """
     Check whether a matrix is Hermitian within a numerical tolerance.
