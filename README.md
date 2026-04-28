@@ -1,5 +1,15 @@
 # Numerical Study of Excitation Dynamics and Correlations in a Rydberg Atom Chain
 
+## Example Output
+
+Example average excitation dynamics:
+
+![Average excitation dynamics](figures/average_excitation.png)
+
+Example site-resolved excitation heatmap:
+
+![Site-resolved excitation heatmap](figures/site_resolved_heatmap.png)
+
 ## 1. Project Overview
 
 This project is a first numerical framework for studying excitation dynamics and correlations in a finite one-dimensional chain of laser-driven Rydberg atoms.
