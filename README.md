@@ -163,6 +163,28 @@ The default initial state is:
 
 This means all atoms start in the ground state.
 
+The initial state can also be changed in `main.py` using the variable `initial_bitstring`.
+
+The convention is:
+
+```text
+0 = |g>
+1 = |r>
+```
+
+The leftmost character corresponds to site 0, and the rightmost character corresponds to site N - 1.
+
+Examples:
+
+```python
+initial_bitstring = "000000"  # |gggggg>, all atoms start in the ground state
+initial_bitstring = "100000"  # |rggggg>, the first atom starts in the Rydberg state
+initial_bitstring = "010000"  # |grgggg>, the second atom starts in the Rydberg state
+initial_bitstring = "101010"  # |rgrgrg>, alternating excitation pattern
+```
+
+This is useful for studying different state-preparation patterns, local excitation dynamics, and blockade-related behaviour.
+
 This is a natural starting point because it is simple and allows us to observe how the laser drive creates Rydberg excitations over time.
 
 The current code uses exact diagonalisation for a time-independent Hamiltonian.
