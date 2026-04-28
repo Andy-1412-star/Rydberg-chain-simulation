@@ -2,7 +2,9 @@
 
 ## 1. Project Overview
 
-This project is a clear first numerical framework for studying a finite one-dimensional chain of laser-driven Rydberg atoms. It is designed as a starting template for a summer research project, so the main goals are:
+This project is a first numerical framework for studying excitation dynamics and correlations in a finite one-dimensional chain of laser-driven Rydberg atoms.
+
+It is designed as a starting template for a summer research project. The main goals are:
 
 - readable code
 - modular structure
@@ -11,82 +13,107 @@ This project is a clear first numerical framework for studying a finite one-dime
 
 Each atom is treated as a two-level system:
 
-- \(|g\rangle\) = ground state
-- \(|r\rangle\) = Rydberg excited state
+- `|g>` = ground state
+- `|r>` = Rydberg excited state
 
 The basis convention used throughout the code is:
 
 - `0 = |g>`
 - `1 = |r>`
 
-For a chain of \(N\) atoms, the many-body Hilbert space has dimension
+For a chain of `N` atoms, the many-body Hilbert space has dimension:
 
-```math
-2^N
+```text
+dim(H) = 2^N
 ```
 
-because each atom has two possible states and the full basis contains all binary strings of length \(N\).
+This is because each atom has two possible states, and the full many-body basis contains all binary strings of length `N`.
 
-This first version is intended for small systems such as \(N = 4, 5, 6\), and can often still be used a bit beyond that. However, exact simulation becomes expensive quickly as \(N\) increases.
+This first version is intended for small systems such as `N = 4, 5, 6`. It may also work for slightly larger systems, but exact simulation becomes expensive quickly as `N` increases.
+
+---
 
 ## 2. Physical Model
 
-The system is modelled as an interacting spin-1/2 chain with coherent laser driving. The Hamiltonian is
+The system is modelled as an interacting spin-1/2 chain with coherent laser driving.
 
-```math
-H = \frac{\Omega}{2}\sum_i \sigma_x^{(i)}
-    - \Delta \sum_i n_i
-    + \sum_{i<j} V_{ij} n_i n_j
+The total Hamiltonian is:
+
+```text
+H = H_drive + H_detuning + H_int
+```
+
+More explicitly:
+
+```text
+H = (Omega / 2) * sum_i sigma_x^(i)
+    - Delta * sum_i n_i
+    + sum_{i < j} V_ij n_i n_j
 ```
 
 The physical meaning of the parameters is:
 
-- \(\Omega\): Rabi frequency, which sets the coherent drive strength
-- \(\Delta\): laser detuning
-- \(V\): overall interaction strength scale
+- `Omega`: Rabi frequency, which sets the coherent drive strength
+- `Delta`: laser detuning
+- `V`: overall interaction strength scale
+- `n_i`: local Rydberg excitation number operator at site `i`
 
-The local number operator is
+The local number operator is:
 
-```math
-n_i = |r_i\rangle\langle r_i|
+```text
+n_i = |r_i><r_i|
 ```
 
-so \(n_i\) measures whether atom \(i\) is in the Rydberg state.
+So `n_i` measures whether atom `i` is in the Rydberg state.
+
+---
 
 ## 3. Hamiltonian Terms
 
-### Coherent Driving
+### 3.1 Coherent Driving
 
-```math
-H_\mathrm{drive} = \frac{\Omega}{2}\sum_i \sigma_x^{(i)}
+```text
+H_drive = (Omega / 2) * sum_i sigma_x^(i)
 ```
 
-This term flips atoms between \(|g\rangle\) and \(|r\rangle\).
+This term flips atoms between `|g>` and `|r>`.
 
-### Detuning
+Physically, it represents coherent laser driving between the ground state and the Rydberg excited state.
 
-```math
-H_\mathrm{detuning} = -\Delta \sum_i n_i
+---
+
+### 3.2 Detuning
+
+```text
+H_detuning = - Delta * sum_i n_i
 ```
 
-This changes the energy cost of creating Rydberg excitations.
+This term changes the energy cost of creating Rydberg excitations.
 
-### Interaction
+The detuning `Delta` controls how favourable or unfavourable it is for atoms to become excited.
 
-```math
-H_\mathrm{int} = \sum_{i<j} V_{ij} n_i n_j
+---
+
+### 3.3 Interaction
+
+```text
+H_int = sum_{i < j} V_ij n_i n_j
 ```
 
-This term contributes when both sites \(i\) and \(j\) are excited. Physically, it captures the fact that two nearby Rydberg excitations can strongly interact.
+This term contributes when both sites `i` and `j` are excited.
+
+Physically, it captures the fact that nearby Rydberg excitations can strongly interact. In the strong-interaction regime, this can suppress simultaneous nearby excitations, which is related to the Rydberg blockade effect.
+
+---
 
 ## 4. Interaction Options
 
 Two interaction models are included.
 
-### Power-law interaction
+### 4.1 Power-law interaction
 
-```math
-V_{ij} = \frac{V}{|i-j|^6}
+```text
+V_ij = V / |i - j|^6
 ```
 
 Use:
@@ -95,16 +122,15 @@ Use:
 interaction_type = "power_law"
 ```
 
-This is a simple van der Waals-type model.
+This is a simple van der Waals-type interaction model.
 
-### Nearest-neighbour-only interaction
+---
 
-```math
-V_{ij} =
-\begin{cases}
-V, & j = i + 1 \\
-0, & \text{otherwise}
-\end{cases}
+### 4.2 Nearest-neighbour-only interaction
+
+```text
+V_ij = V    if j = i + 1
+V_ij = 0    otherwise
 ```
 
 Use:
@@ -113,71 +139,106 @@ Use:
 interaction_type = "nearest_neighbor"
 ```
 
-This is a simpler truncated model which is easier to compare with basic lattice models.
+This is a simpler truncated model. It is useful for comparison with basic lattice spin models.
+
+---
 
 ## 5. Initial State and Time Evolution
 
-The default initial state is
+The default initial state is:
 
-```math
-|ggg\cdots g\rangle
+```text
+|ggg...g>
 ```
 
-which means all atoms start in the ground state.
+This means all atoms start in the ground state.
 
-This is a natural starting point because it is simple and lets us watch how the laser drive creates excitations over time.
+This is a natural starting point because it is simple and allows us to observe how the laser drive creates Rydberg excitations over time.
 
-The current code uses **exact diagonalisation** for a **time-independent Hamiltonian**:
+The current code uses exact diagonalisation for a time-independent Hamiltonian.
 
-```math
-\psi(t) = U e^{-iEt} U^\dagger \psi(0)
+The time evolution is:
+
+```text
+|psi(t)> = U exp(-i E t) U^dagger |psi(0)>
 ```
 
-where \(E\) contains the energy eigenvalues and \(U\) contains the eigenvectors of the Hamiltonian.
+where:
 
-We work in units where
+- `E` contains the energy eigenvalues
+- `U` contains the eigenvectors of the Hamiltonian
+- `|psi(0)>` is the initial state
+- `|psi(t)>` is the state at time `t`
 
-```math
-\hbar = 1
+The code works in units where:
+
+```text
+hbar = 1
 ```
 
-so time is measured in inverse energy or inverse frequency units.
+Therefore, time is measured in inverse energy or inverse frequency units.
+
+---
 
 ## 6. Observables
 
-The code calculates the following quantities:
+The code calculates several physically useful observables.
 
-### Average total excitation number
+### 6.1 Average total excitation number
 
-```math
-\langle N_r(t)\rangle = \left\langle \psi(t)\middle|\sum_i n_i\middle|\psi(t)\right\rangle
+```text
+<N_r(t)> = <psi(t)| sum_i n_i |psi(t)>
 ```
 
-### Excitation density
+This measures the average total number of atoms in the Rydberg state at time `t`.
 
-```math
-\frac{\langle N_r(t)\rangle}{N}
+---
+
+### 6.2 Excitation density
+
+```text
+excitation density = <N_r(t)> / N
 ```
 
-### Site-resolved excitation probability
+This gives the average fraction of atoms that are excited.
 
-```math
-\langle n_i(t)\rangle
+---
+
+### 6.3 Site-resolved excitation probability
+
+```text
+<n_i(t)>
 ```
 
-### Two-point correlation function
+This measures the probability that atom `i` is in the Rydberg state at time `t`.
 
-```math
-\langle n_i n_j\rangle
+This is useful for seeing whether excitations are uniformly distributed or spatially structured.
+
+---
+
+### 6.4 Two-point correlation function
+
+```text
+<n_i n_j>
 ```
 
-### Connected correlation function
+This measures the joint probability that both atoms `i` and `j` are excited.
 
-```math
-C_{ij} = \langle n_i n_j\rangle - \langle n_i\rangle\langle n_j\rangle
+It is useful for studying whether excitations tend to appear together or avoid each other.
+
+---
+
+### 6.5 Connected correlation function
+
+```text
+C_ij = <n_i n_j> - <n_i><n_j>
 ```
 
 The connected correlation removes the part that would already be present if the two sites behaved independently.
+
+It is therefore useful for identifying genuine correlations caused by interactions.
+
+---
 
 ## 7. What the Example Script Produces
 
@@ -198,6 +259,8 @@ These plots help show:
 - how strong interactions suppress multiple excitations
 - blockade-related spatial correlation patterns
 
+---
+
 ## 8. How to Run
 
 Install the required packages:
@@ -212,7 +275,19 @@ Then run:
 python main.py
 ```
 
-The script will save figures into a folder called `figures/`.
+If `python main.py` does not work because Windows points to the wrong Python interpreter, use your Anaconda Python path instead, for example:
+
+```bash
+C:\Users\AndyW\anaconda3\python.exe main.py
+```
+
+The script will save figures into a folder called:
+
+```text
+figures/
+```
+
+---
 
 ## 9. Project Structure
 
@@ -225,16 +300,31 @@ rydberg_chain_project/
     plotting.py
     parameter_scan.py
     requirements.txt
+    figures/
 ```
+
+The main files are:
+
+- `main.py`: main script for running an example simulation
+- `rydberg_model.py`: construction of operators, Hamiltonian, and initial state
+- `observables.py`: calculation of excitation numbers and correlations
+- `plotting.py`: plotting functions
+- `parameter_scan.py`: helper functions for scanning parameters
+- `requirements.txt`: required Python packages
+- `figures/`: output folder for generated plots
+
+---
 
 ## 10. Numerical Limitations
 
-This first version is based on exact Hamiltonian construction and exact diagonalisation. That is useful because it is transparent and easy to explain, but it also means the method becomes expensive for larger systems.
+This first version is based on exact Hamiltonian construction and exact diagonalisation.
+
+This is useful because it is transparent and easy to explain, but it also means the method becomes expensive for larger systems.
 
 The main reason is the Hilbert space growth:
 
-```math
-\dim(\mathcal{H}) = 2^N
+```text
+dim(H) = 2^N
 ```
 
 So every extra atom doubles the Hilbert space dimension.
@@ -249,11 +339,15 @@ Current limitations of this first version:
 - no direct comparison with experimental data yet
 - dense matrices rather than sparse methods
 
+---
+
 ## 11. Possible Future Extensions
 
-This project was written to make later changes easier. Natural next steps include:
+This project was written to make later changes easier.
 
-- time-dependent \(\Omega(t)\) or \(\Delta(t)\)
+Natural next steps include:
+
+- time-dependent `Omega(t)` or `Delta(t)`
 - pulse shaping
 - spontaneous decay or dephasing
 - Lindblad open-system evolution
@@ -262,21 +356,40 @@ This project was written to make later changes easier. Natural next steps includ
 - periodic boundary conditions
 - sparse-matrix methods
 - comparison with lab data
+- adapting the Hamiltonian to match the supervisor's experimental system
+
+---
 
 ## 12. Which File to Modify
 
-If your supervisor changes the Hamiltonian, the first file to edit is:
+If the supervisor changes the Hamiltonian, the first file to edit is:
 
-- `rydberg_model.py`
+```text
+rydberg_model.py
+```
 
-If you want to add or change observables:
+If new observables need to be added or existing observables need to be modified, edit:
 
-- `observables.py`
+```text
+observables.py
+```
 
-If you want to change the plotting style or add figures:
+If the plotting style or output figures need to be changed, edit:
 
-- `plotting.py`
+```text
+plotting.py
+```
 
-If you want to add parameter comparisons:
+If new parameter comparisons are needed, edit:
 
-- `parameter_scan.py`
+```text
+parameter_scan.py
+```
+
+---
+
+## 13. Current Status
+
+This repository currently provides a clean initial simulation framework for a finite Rydberg atom chain.
+
+It is not intended to be a final research-grade simulation yet. Instead, it is a flexible starting point that can later be adjusted to include more realistic experimental parameters, decoherence models, pulse shapes, or lab-specific observables.
